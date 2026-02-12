@@ -1,0 +1,4 @@
+chath/
+.env
+__pycache__/
+pipfile
