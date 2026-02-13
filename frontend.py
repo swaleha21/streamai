@@ -1,41 +1,72 @@
-from dotenv import load_dotenv
-load_dotenv()
 import streamlit as st
+import pandas as pd
 from ai_agent import get_response_from_ai_agent
-# ---------------- UI Setup ----------------
-st.set_page_config(page_title="LangGraph Agent UI", layout="centered")
-st.title("🤖 AI Chatbot Agents")
-st.write("Create and Interact with the AI Agents!")
-system_prompt = st.text_area(
-    "Define your AI Agent:",
-    height=70,
-    placeholder="Type your system prompt here..."
+
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="GenAI Agent Studio",
+    page_icon="🤖",
+    layout="centered"
 )
-MODEL_NAMES_GROQ = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768"]
-MODEL_NAMES_OPENAI = ["gpt-4o-mini"]
-provider = st.radio("Select Provider:", ("Groq", "OpenAI"))
-if provider == "Groq":
-    selected_model = st.selectbox("Select Groq Model:", MODEL_NAMES_GROQ)
-else:
-    selected_model = st.selectbox("Select OpenAI Model:", MODEL_NAMES_OPENAI)
-allow_web_search = st.checkbox("Allow Web Search")
-user_query = st.text_area(
-    "Enter your query:",
-    height=150,
-    placeholder="Ask anything!"
+
+# ---------------- SIDEBAR ----------------
+with st.sidebar:
+    st.markdown("## 🤖 GenAI Agent Studio")
+    uploaded_file = st.file_uploader(
+        "📂 Upload Dataset",
+        type=["csv"]
+    )
+
+# ---------------- MAIN UI ----------------
+st.title("🤖 GenAI Agent Studio")
+st.subheader("Create and interact with AI agents")
+
+# ---------------- AGENT PROMPT ----------------
+agent_prompt = st.text_area(
+    "🧠 Define Your AI Agent",
+    height=120,
+    placeholder=(
+        "You are a helpful AI assistant. "
+        
+    )
 )
-# ---------------- Run Agent ----------------
-if st.button("🚀 Ask Agent!"):
-    if not user_query.strip():
-        st.warning("Please enter a query.")
-    else:
-        with st.spinner("Thinking... 🤔"):
+
+user_query = st.text_input(
+    "💬 Ask Your Question",
+    placeholder="Ask anything or ask about the uploaded dataset..."
+)
+
+# ---------------- DATASET CONTEXT ----------------
+dataset_context = None
+
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success("✅ Dataset uploaded successfully")
+    st.write("Preview of dataset:")
+    st.dataframe(df)
+
+    dataset_context = (
+        f"Columns: {list(df.columns)}\n"
+        f"Number of rows: {len(df)}\n"
+        f"Sample data:\n{df.head(5).to_string()}"
+    )
+
+# ---------------- ACTION ----------------
+if st.button("🚀 Generate Response"):
+    if agent_prompt and user_query:
+        with st.spinner("Thinking... 🤖"):
             response = get_response_from_ai_agent(
-                llm_id=selected_model,
-                query=user_query,
-                allow_search=allow_web_search,
-                system_prompt=system_prompt,
-                provider=provider
+                user_query=user_query,
+                system_prompt=agent_prompt,
+                dataset_context=dataset_context,
+                provider="groq"
             )
-        st.subheader("🧠 Agent Response")
+
+        st.markdown("### 🤖 AI Response")
         st.write(response)
+    else:
+        st.warning("⚠️ Please define the AI agent and enter a question.")
+
+# ---------------- FOOTER ----------------
+st.divider()
+st.caption("© 2026 GenAI Agent Studio | Built by Swaleha Sutar")
